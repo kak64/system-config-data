@@ -1,0 +1,7 @@
+python-nmap
+pymetasploit3
+colorama
+requests
+flask
+stem
+dnspython
