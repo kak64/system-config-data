@@ -67,15 +67,6 @@ Regularly clear command history: history -c.
 ⚠️ Legal Disclaimer
 This framework is developed for educational purposes and authorized penetration testing only. Unauthorized use against systems is illegal and strictly prohibited. The developer is not responsible for any misuse.
 
----
 
-### How to add this to GitHub?
-1. Go to your repository (`system-config-data`).
-2. Click **Add file** -> **Create new file**.
-3. The file name is: `README.md`.
-4. Paste the content I wrote above.
-5. Click **Commit changes**.
-
-**Would you like me to also create a `targets.txt` file for you as an example, so you can see how to enter lists of servers and sites correctly?**
 
 
