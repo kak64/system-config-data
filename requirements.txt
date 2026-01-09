@@ -1,7 +1,6 @@
 python-nmap
+shodan
 pymetasploit3
 colorama
 requests
 flask
-stem
-dnspython
